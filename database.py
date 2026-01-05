@@ -160,3 +160,44 @@ def get_total_games():
     result = cursor.fetchone()[0]
     conn.close()
     return result
+
+
+def update_game(game_id, game_data):
+    """Update an existing game with new data"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Update game
+    cursor.execute('''
+                   UPDATE games
+                   SET winner   = %s,
+                       raw_data = %s
+                   WHERE id = %s
+                   ''', (game_data['winner'], json.dumps(game_data), game_id))
+
+    # Delete old participants
+    cursor.execute('DELETE FROM game_participants WHERE game_id = %s', (game_id,))
+
+    # Insert new participants
+    for team_color in ['blue', 'red']:
+        team_data = game_data[f'{team_color}_team']
+        won = (game_data['winner'].lower() == team_color)
+
+        # Operatives
+        for player_name in team_data['operatives']:
+            player_id = get_or_create_player(player_name)
+            cursor.execute('''
+                           INSERT INTO game_participants (game_id, player_id, team, role, won)
+                           VALUES (%s, %s, %s, %s, %s)
+                           ''', (game_id, player_id, team_color.capitalize(), 'Operative', won))
+
+        # Spymasters
+        for player_name in team_data['spymasters']:
+            player_id = get_or_create_player(player_name)
+            cursor.execute('''
+                           INSERT INTO game_participants (game_id, player_id, team, role, won)
+                           VALUES (%s, %s, %s, %s, %s)
+                           ''', (game_id, player_id, team_color.capitalize(), 'Spymaster', won))
+
+    conn.commit()
+    conn.close()
