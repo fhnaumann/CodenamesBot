@@ -204,6 +204,10 @@ async def on_message(message):
                         inline=True
                     )
 
+                    # Send the result to the user
+                    await message.reply(embed=result_embed)
+
+                    # Clean up
                     os.remove(image_path)
 
                     await message.remove_reaction('⏳', client.user)

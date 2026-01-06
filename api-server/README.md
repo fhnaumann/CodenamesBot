@@ -36,7 +36,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 **Production:**
 ```bash
-python main.py
+python bot.py
 ```
 
 ## API Documentation

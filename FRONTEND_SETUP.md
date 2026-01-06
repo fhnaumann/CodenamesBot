@@ -59,7 +59,7 @@ Added new endpoint to `api-server/`:
 ### Start the API Server (Terminal 1)
 ```bash
 cd api-server
-python main.py
+python bot.py
 ```
 
 ### Start the Frontend Dev Server (Terminal 2)

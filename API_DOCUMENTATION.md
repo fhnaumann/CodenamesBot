@@ -296,7 +296,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 **Production:**
 ```bash
 cd api-server
-python main.py
+python bot.py
 ```
 
 ### Interactive API Documentation

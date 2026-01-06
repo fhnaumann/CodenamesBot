@@ -56,7 +56,7 @@ CodenamesBot/
    pip install -r requirements.txt
    cp .env.example .env
    # Edit .env with your DATABASE_URL
-   python main.py
+   python bot.py
    ```
 
 3. **Start the Discord bot:**
@@ -65,7 +65,7 @@ CodenamesBot/
    pip install -r requirements.txt
    cp .env.example .env
    # Edit .env with your Discord, Claude, and API server settings
-   python main.py
+   python bot.py
    ```
 
 4. **Access the API documentation:**

@@ -120,7 +120,7 @@ const formatTeam = (team: { operatives: string[]; spymasters: string[] }) => {
               </TableCell>
               <TableCell>
                 <Badge
-                  :variant="game.winner === 'Blue' ? 'default' : 'destructive'"
+                  :class="game.winner === 'Blue' ? 'bg-blue-500' : 'bg-red-500'"
                   class="font-semibold"
                 >
                   {{ game.winner }}
