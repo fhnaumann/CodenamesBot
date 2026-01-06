@@ -1,5 +1,7 @@
 CODENAMES_EXTRACTION_PROMPT = """IMPORTANT - Determining the winner:
 - Look at the team panels on the left (Blue) and right (Red) sides to get the names of all participating players. Ignore potential spectators that are listed in the top middle.
+- Here is a list of known player names: %PLAYERS%
+- If an extracted name is very similar to an existing player name, assume that you made an extraction error and use the existing player name instead. 
 - Ignore the text at the top that states who won. It displays either "YOUR TEAM WINS" or "OTHER TEAM WINS" (potentially in a different language). It may also be missing if the image cropped it out.
 - Check if the black assassin word was selected (look for the dark assassin figure on the board)
 - If the assassin was selected:
