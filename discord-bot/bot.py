@@ -46,56 +46,56 @@ def extract_game_data_with_claude(image_path):
     """Use Claude Vision to extract game data from screenshot"""
 
     # Read and encode image
-    # with open(image_path, 'rb') as f:
-    #     image_data = base64.b64encode(f.read()).decode('utf-8')
-    #
-    # # Call Claude
-    # message = anthropic_client.messages.create(
-    #     model="claude-sonnet-4-20250514",
-    #     max_tokens=1024,
-    #     messages=[{
-    #         "role": "user",
-    #         "content": [
-    #             {
-    #                 "type": "image",
-    #                 "source": {
-    #                     "type": "base64",
-    #                     "media_type": "image/png",
-    #                     "data": image_data
-    #                 }
-    #             },
-    #             {
-    #                 "type": "text",
-    #                 "text": CODENAMES_EXTRACTION_PROMPT
-    #             }
-    #         ]
-    #     }]
-    # )
-    #
-    # # Parse response
-    # response_text = message.content[0].text.strip()
-    # print(f"Claude response: {response_text}")
-    #
-    # # Extract JSON (in case Claude adds markdown formatting)
-    # if "```json" in response_text:
-    #     response_text = response_text.split("```json")[1].split("```")[0].strip()
-    # elif "```" in response_text:
-    #     response_text = response_text.split("```")[1].split("```")[0].strip()
-    #
-    # return json.loads(response_text)
-    return {
-  "blue_team": {
-    "operatives": [
-      "Felix", "Julia"
-    ],
-    "spymasters": ["Diana", "Nabi"]
-  },
-  "red_team": {
-    "operatives": [],
-    "spymasters": []
-  },
-  "winner": "Red"
-}
+    with open(image_path, 'rb') as f:
+        image_data = base64.b64encode(f.read()).decode('utf-8')
+
+    # Call Claude
+    message = anthropic_client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=1024,
+        messages=[{
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/png",
+                        "data": image_data
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": CODENAMES_EXTRACTION_PROMPT
+                }
+            ]
+        }]
+    )
+
+    # Parse response
+    response_text = message.content[0].text.strip()
+    print(f"Claude response: {response_text}")
+
+    # Extract JSON (in case Claude adds markdown formatting)
+    if "```json" in response_text:
+        response_text = response_text.split("```json")[1].split("```")[0].strip()
+    elif "```" in response_text:
+        response_text = response_text.split("```")[1].split("```")[0].strip()
+
+    return json.loads(response_text)
+#     return {
+#   "blue_team": {
+#     "operatives": [
+#       "Felix", "Julia"
+#     ],
+#     "spymasters": ["Diana", "Nabi"]
+#   },
+#   "red_team": {
+#     "operatives": [],
+#     "spymasters": []
+#   },
+#   "winner": "Red"
+# }
 
 
 def parse_embed_to_game_data(embed):
