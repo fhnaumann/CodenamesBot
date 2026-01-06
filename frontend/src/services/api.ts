@@ -15,6 +15,7 @@ async function fetchAPI<T>(
   endpoint: string,
   options?: RequestInit,
 ): Promise<T> {
+  console.log('API_BASE_URL', API_BASE_URL)
   const response = await fetch(`${API_BASE_URL}${endpoint}`, options)
   console.log(response)
   if (!response.ok) {
