@@ -1,13 +1,16 @@
 [project]
 name = "codenamesbot"
-version = "0.1.0"
-description = "Add your description here"
+version = "1.0.0"
+description = "Codenames statistics tracking system with Discord bot, API server, and web frontend"
 requires-python = ">=3.14"
-dependencies = [
-    "anthropic>=0.75.0",
-    "discord-py>=2.6.4",
-    "pillow>=12.1.0",
-    "psycopg2-binary>=2.9.11",
-    "pytesseract>=0.3.13",
-    "python-dotenv>=1.2.1",
-]
+readme = "README.md"
+
+# Note: This project is split into multiple services.
+# Each service has its own requirements.txt:
+# - discord-bot/requirements.txt
+# - api-server/requirements.txt
+# - frontend/ (to be implemented)
+#
+# To install all dependencies for development:
+# pip install -r discord-bot/requirements.txt
+# pip install -r api-server/requirements.txt

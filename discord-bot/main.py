@@ -4,9 +4,9 @@ import os
 
 import anthropic
 import discord
+import httpx
 from dotenv import load_dotenv
 
-from database import save_game, init_database
 from prompts import CODENAMES_EXTRACTION_PROMPT
 from stats_formatter import format_stats_embed
 from views import EditGameButton
@@ -14,13 +14,14 @@ from views import EditGameButton
 load_dotenv()
 
 intents = discord.Intents.default()
-intents.message_content = True  # Add this line!
+intents.message_content = True
 
 client = discord.Client(intents=intents)
 
 TARGET_CHANNEL_ID = int(os.getenv('CHANNEL_ID'))
 DISCORD_KEY = os.getenv('DISCORD_KEY')
 CLAUDE_KEY = os.getenv('CLAUDE_KEY')
+API_SERVER_URL = os.getenv('API_SERVER_URL', 'http://localhost:8000')
 
 anthropic_client = anthropic.Anthropic(api_key=CLAUDE_KEY)
 
@@ -28,7 +29,17 @@ stats_message_id = None
 
 @client.event
 async def on_ready():
-    init_database()
+    # Check API server health
+    async with httpx.AsyncClient() as http_client:
+        try:
+            response = await http_client.get(f"{API_SERVER_URL}/health")
+            if response.status_code == 200:
+                print(f'API server is healthy: {response.json()}')
+            else:
+                print(f'Warning: API server returned status {response.status_code}')
+        except Exception as e:
+            print(f'Warning: Could not connect to API server: {e}')
+
     print(f'We have logged in as {client.user}')
 
 
@@ -55,56 +66,56 @@ def extract_game_data_with_claude(image_path):
     """Use Claude Vision to extract game data from screenshot"""
 
     # Read and encode image
-    with open(image_path, 'rb') as f:
-        image_data = base64.b64encode(f.read()).decode('utf-8')
-
-    # Call Claude
-    message = anthropic_client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1024,
-        messages=[{
-            "role": "user",
-            "content": [
-                {
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": "image/png",
-                        "data": image_data
-                    }
-                },
-                {
-                    "type": "text",
-                    "text": CODENAMES_EXTRACTION_PROMPT
-                }
-            ]
-        }]
-    )
-
-    # Parse response
-    response_text = message.content[0].text.strip()
-    print(f"Claude response: {response_text}")
-
-    # Extract JSON (in case Claude adds markdown formatting)
-    if "```json" in response_text:
-        response_text = response_text.split("```json")[1].split("```")[0].strip()
-    elif "```" in response_text:
-        response_text = response_text.split("```")[1].split("```")[0].strip()
-
-    return json.loads(response_text)
-#     return {
-#   "blue_team": {
-#     "operatives": [
-#       "Felix"
-#     ],
-#     "spymasters": []
-#   },
-#   "red_team": {
-#     "operatives": [],
-#     "spymasters": []
-#   },
-#   "winner": "Red"
-# }
+    # with open(image_path, 'rb') as f:
+    #     image_data = base64.b64encode(f.read()).decode('utf-8')
+    #
+    # # Call Claude
+    # message = anthropic_client.messages.create(
+    #     model="claude-sonnet-4-20250514",
+    #     max_tokens=1024,
+    #     messages=[{
+    #         "role": "user",
+    #         "content": [
+    #             {
+    #                 "type": "image",
+    #                 "source": {
+    #                     "type": "base64",
+    #                     "media_type": "image/png",
+    #                     "data": image_data
+    #                 }
+    #             },
+    #             {
+    #                 "type": "text",
+    #                 "text": CODENAMES_EXTRACTION_PROMPT
+    #             }
+    #         ]
+    #     }]
+    # )
+    #
+    # # Parse response
+    # response_text = message.content[0].text.strip()
+    # print(f"Claude response: {response_text}")
+    #
+    # # Extract JSON (in case Claude adds markdown formatting)
+    # if "```json" in response_text:
+    #     response_text = response_text.split("```json")[1].split("```")[0].strip()
+    # elif "```" in response_text:
+    #     response_text = response_text.split("```")[1].split("```")[0].strip()
+    #
+    # return json.loads(response_text)
+    return {
+  "blue_team": {
+    "operatives": [
+      "Felix", "Julia"
+    ],
+    "spymasters": ["Diana", "Nabi"]
+  },
+  "red_team": {
+    "operatives": [],
+    "spymasters": []
+  },
+  "winner": "Red"
+}
 
 
 def parse_embed_to_game_data(embed):
@@ -173,9 +184,17 @@ async def on_message(message):
                     game_data = extract_game_data_with_claude(image_path)
                     print("Extracted game data:", json.dumps(game_data, indent=2))
 
-                    # Save to database
-                    game_id = save_game(game_data)
-                    print(f"Saved game #{game_id}")
+                    # Save to database via API
+                    async with httpx.AsyncClient() as http_client:
+                        response = await http_client.post(
+                            f"{API_SERVER_URL}/api/games",
+                            json=game_data,
+                            timeout=10.0
+                        )
+                        response.raise_for_status()
+                        result = response.json()
+                        game_id = result['game_id']
+                        print(f"Saved game #{game_id}")
 
                     # Send immediate response with game result
                     result_embed = discord.Embed(

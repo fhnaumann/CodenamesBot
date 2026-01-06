@@ -1,5 +1,8 @@
+import os
 import discord
-from database import update_game
+import httpx
+
+API_SERVER_URL = os.getenv('API_SERVER_URL', 'http://localhost:8000')
 
 
 class EditGameButton(discord.ui.View):
@@ -95,8 +98,14 @@ class EditGameModal(discord.ui.Modal, title="Edit Game Data"):
                 }
             }
 
-            # Update database
-            update_game(self.game_id, game_data)
+            # Update database via API
+            async with httpx.AsyncClient() as http_client:
+                response = await http_client.put(
+                    f"{API_SERVER_URL}/api/games/{self.game_id}",
+                    json=game_data,
+                    timeout=10.0
+                )
+                response.raise_for_status()
 
             # Update the embed
             new_embed = discord.Embed(
