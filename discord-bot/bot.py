@@ -205,7 +205,9 @@ async def on_message(message):
                     )
 
                     # Send the result to the user
-                    await message.reply(embed=result_embed)
+                    print(f"Sending reply with embed for game #{game_id}")
+                    reply_msg = await message.reply(embed=result_embed)
+                    print(f"Reply sent successfully: {reply_msg.id}")
 
                     # Clean up
                     os.remove(image_path)
