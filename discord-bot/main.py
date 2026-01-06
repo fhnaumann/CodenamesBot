@@ -42,26 +42,6 @@ async def on_ready():
 
     print(f'We have logged in as {client.user}')
 
-
-async def update_stats_message(channel):
-    """Update or create the pinned stats message"""
-    global stats_message_id
-
-    embed = format_stats_embed()
-
-    if stats_message_id:
-        try:
-            msg = await channel.fetch_message(stats_message_id)
-            await msg.edit(embed=embed)
-            return
-        except:
-            stats_message_id = None
-
-    # Create new message
-    msg = await channel.send(embed=embed)
-    await msg.pin()
-    stats_message_id = msg.id
-
 def extract_game_data_with_claude(image_path):
     """Use Claude Vision to extract game data from screenshot"""
 
@@ -223,14 +203,6 @@ async def on_message(message):
                         value=f"Operatives: {red_ops}\nSpymasters: {red_spy}",
                         inline=True
                     )
-
-                    # Add the edit button
-                    view = EditGameButton(game_id, game_data, update_stats_message)
-
-                    await message.reply(embed=result_embed, view=view)
-
-                    # Update pinned stats message
-                    await update_stats_message(message.channel)
 
                     os.remove(image_path)
 
