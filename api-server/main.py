@@ -41,12 +41,13 @@ app.add_middleware(
 class TeamData(BaseModel):
     operatives: List[str]
     spymasters: List[str]
+    count: int
 
 
 class GameData(BaseModel):
     blue_team: TeamData
     red_team: TeamData
-    winner: str
+    won_because_of_assassin: Optional[str] = None
 
 
 class GameResponse(BaseModel):
@@ -219,27 +220,59 @@ async def create_game(game_data: GameData):
     Create a new game record
 
     Request body should include:
-    - blue_team: Team data with operatives and spymasters
-    - red_team: Team data with operatives and spymasters
-    - winner: "Blue" or "Red"
+    - blue_team: Team data with operatives, spymasters, and count
+    - red_team: Team data with operatives, spymasters, and count
+    - won_because_of_assassin: Optional field indicating which team won due to assassin
+
+    Winner is determined by:
+    - If won_because_of_assassin is present, that team won
+    - Otherwise, the team with count == 0 won
     """
     try:
-        # Validate winner
-        if game_data.winner not in ["Blue", "Red"]:
-            raise HTTPException(status_code=400, detail="Winner must be 'Blue' or 'Red'")
+        # Determine winner
+        if game_data.won_because_of_assassin:
+            # Assassin was hit - the specified team won
+            winner = game_data.won_because_of_assassin.capitalize()
+            if winner not in ["Blue", "Red"]:
+                raise HTTPException(
+                    status_code=400,
+                    detail="won_because_of_assassin must be 'blue' or 'red'"
+                )
+        else:
+            # Normal game end - team with count == 0 won
+            if game_data.blue_team.count == 0 and game_data.red_team.count == 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Both teams have count 0 without assassin - invalid game state"
+                )
+            elif game_data.blue_team.count == 0:
+                winner = "Blue"
+            elif game_data.red_team.count == 0:
+                winner = "Red"
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No team has count 0 and no assassin winner - invalid game state"
+                )
 
         # Convert to dict format expected by database.py
         game_dict = {
             "blue_team": {
                 "operatives": game_data.blue_team.operatives,
-                "spymasters": game_data.blue_team.spymasters
+                "spymasters": game_data.blue_team.spymasters,
+                "count": game_data.blue_team.count
             },
             "red_team": {
                 "operatives": game_data.red_team.operatives,
-                "spymasters": game_data.red_team.spymasters
+                "spymasters": game_data.red_team.spymasters,
+                "count": game_data.red_team.count
             },
-            "winner": game_data.winner
+            "winner": winner
         }
+
+        # Include assassin info if present
+        if game_data.won_because_of_assassin:
+            game_dict["won_because_of_assassin"] = game_data.won_because_of_assassin
 
         game_id = save_game(game_dict)
         return GameResponse(game_id=game_id, message=f"Game #{game_id} created successfully")
@@ -258,27 +291,59 @@ async def update_game_data(game_id: int, game_data: GameData):
     - game_id: The ID of the game to update
 
     Request body should include:
-    - blue_team: Team data with operatives and spymasters
-    - red_team: Team data with operatives and spymasters
-    - winner: "Blue" or "Red"
+    - blue_team: Team data with operatives, spymasters, and count
+    - red_team: Team data with operatives, spymasters, and count
+    - won_because_of_assassin: Optional field indicating which team won due to assassin
+
+    Winner is determined by:
+    - If won_because_of_assassin is present, that team won
+    - Otherwise, the team with count == 0 won
     """
     try:
-        # Validate winner
-        if game_data.winner not in ["Blue", "Red"]:
-            raise HTTPException(status_code=400, detail="Winner must be 'Blue' or 'Red'")
+        # Determine winner
+        if game_data.won_because_of_assassin:
+            # Assassin was hit - the specified team won
+            winner = game_data.won_because_of_assassin.capitalize()
+            if winner not in ["Blue", "Red"]:
+                raise HTTPException(
+                    status_code=400,
+                    detail="won_because_of_assassin must be 'blue' or 'red'"
+                )
+        else:
+            # Normal game end - team with count == 0 won
+            if game_data.blue_team.count == 0 and game_data.red_team.count == 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Both teams have count 0 without assassin - invalid game state"
+                )
+            elif game_data.blue_team.count == 0:
+                winner = "Blue"
+            elif game_data.red_team.count == 0:
+                winner = "Red"
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No team has count 0 and no assassin winner - invalid game state"
+                )
 
         # Convert to dict format expected by database.py
         game_dict = {
             "blue_team": {
                 "operatives": game_data.blue_team.operatives,
-                "spymasters": game_data.blue_team.spymasters
+                "spymasters": game_data.blue_team.spymasters,
+                "count": game_data.blue_team.count
             },
             "red_team": {
                 "operatives": game_data.red_team.operatives,
-                "spymasters": game_data.red_team.spymasters
+                "spymasters": game_data.red_team.spymasters,
+                "count": game_data.red_team.count
             },
-            "winner": game_data.winner
+            "winner": winner
         }
+
+        # Include assassin info if present
+        if game_data.won_because_of_assassin:
+            game_dict["won_because_of_assassin"] = game_data.won_because_of_assassin
 
         update_game(game_id, game_dict)
         return GameResponse(game_id=game_id, message=f"Game #{game_id} updated successfully")
