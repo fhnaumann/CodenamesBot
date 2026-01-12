@@ -98,6 +98,24 @@ def extract_game_data_with_claude(image_path):
 # }
 
 
+def determine_winner(game_data):
+    """Determine the winner from game data structure"""
+    if 'won_because_of_assassin' in game_data and game_data['won_because_of_assassin']:
+        # Assassin was hit - the specified team won
+        return game_data['won_because_of_assassin'].capitalize()
+    else:
+        # Normal game end - team with count == 0 won
+        blue_count = game_data.get('blue_team', {}).get('count', None)
+        red_count = game_data.get('red_team', {}).get('count', None)
+
+        if blue_count == 0:
+            return "Blue"
+        elif red_count == 0:
+            return "Red"
+        else:
+            raise ValueError("Cannot determine winner: no team has count 0 and no assassin winner")
+
+
 def parse_embed_to_game_data(embed):
     """Parse a Discord embed back into game_data format"""
     game_data = {
@@ -176,15 +194,18 @@ async def on_message(message):
                         game_id = result['game_id']
                         print(f"Saved game #{game_id}")
 
+                    # Determine winner
+                    winner = determine_winner(game_data)
+
                     # Send immediate response with game result
                     result_embed = discord.Embed(
                         title=f"🎮 Game #{game_id} Recorded",
-                        color=discord.Color.blue() if game_data['winner'] == 'Blue' else discord.Color.red()
+                        color=discord.Color.blue() if winner == 'Blue' else discord.Color.red()
                     )
 
                     result_embed.add_field(
                         name="🏆 Winner",
-                        value=f"**{game_data['winner']} Team**",
+                        value=f"**{winner} Team**",
                         inline=False
                     )
 
