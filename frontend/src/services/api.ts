@@ -61,9 +61,9 @@ export const api = {
 
   // Create a new game
   async createGame(gameData: {
-    blue_team: { operatives: string[]; spymasters: string[] }
-    red_team: { operatives: string[]; spymasters: string[] }
-    winner: string
+    blue_team: { operatives: string[]; spymasters: string[]; count: number }
+    red_team: { operatives: string[]; spymasters: string[]; count: number }
+    won_because_of_assassin?: string
   }): Promise<{ game_id: number; message: string }> {
     return fetchAPI('/api/games', {
       method: 'POST',
@@ -78,9 +78,9 @@ export const api = {
   async updateGame(
     gameId: number,
     gameData: {
-      blue_team: { operatives: string[]; spymasters: string[] }
-      red_team: { operatives: string[]; spymasters: string[] }
-      winner: string
+      blue_team: { operatives: string[]; spymasters: string[]; count: number }
+      red_team: { operatives: string[]; spymasters: string[]; count: number }
+      won_because_of_assassin?: string
     },
   ): Promise<{ game_id: number; message: string }> {
     return fetchAPI(`/api/games/${gameId}`, {

@@ -1,12 +1,13 @@
 export interface TeamData {
   operatives: string[]
   spymasters: string[]
+  count: number
 }
 
 export interface GameData {
   blue_team: TeamData
   red_team: TeamData
-  winner: string
+  won_because_of_assassin?: string
 }
 
 export interface Game {

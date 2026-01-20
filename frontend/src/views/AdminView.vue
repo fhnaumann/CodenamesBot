@@ -45,9 +45,11 @@ const editingGameId = ref<number | null>(null)
 const formData = ref({
   blueOperatives: '',
   blueSpymasters: '',
+  blueCount: 0,
   redOperatives: '',
   redSpymasters: '',
-  winner: 'Blue',
+  redCount: 0,
+  wonBecauseOfAssassin: '',
 })
 
 const loadGames = async () => {
@@ -91,9 +93,11 @@ const openCreateDialog = () => {
   formData.value = {
     blueOperatives: '',
     blueSpymasters: '',
+    blueCount: 0,
     redOperatives: '',
     redSpymasters: '',
-    winner: 'Blue',
+    redCount: 0,
+    wonBecauseOfAssassin: '',
   }
   dialogOpen.value = true
 }
@@ -101,12 +105,35 @@ const openCreateDialog = () => {
 const openEditDialog = (game: Game) => {
   dialogMode.value = 'edit'
   editingGameId.value = game.id
+
+  // Handle old games that don't have count fields
+  // If both counts are missing/0 and there's a winner, infer counts from winner
+  const blueHasCount = game.raw_data.blue_team.count !== undefined
+  const redHasCount = game.raw_data.red_team.count !== undefined
+
+  let blueCount = game.raw_data.blue_team.count || 0
+  let redCount = game.raw_data.red_team.count || 0
+
+  // Old game structure: no counts but has winner
+  if (!blueHasCount && !redHasCount && game.winner) {
+    // Set winning team to 0, losing team to a default value (8 is typical for Codenames)
+    if (game.winner === 'Blue') {
+      blueCount = 0
+      redCount = 8
+    } else {
+      blueCount = 8
+      redCount = 0
+    }
+  }
+
   formData.value = {
     blueOperatives: game.raw_data.blue_team.operatives.join(', '),
     blueSpymasters: game.raw_data.blue_team.spymasters.join(', '),
+    blueCount,
     redOperatives: game.raw_data.red_team.operatives.join(', '),
     redSpymasters: game.raw_data.red_team.spymasters.join(', '),
-    winner: game.winner,
+    redCount,
+    wonBecauseOfAssassin: (game.raw_data as any).won_because_of_assassin || '',
   }
   dialogOpen.value = true
 }
@@ -120,16 +147,26 @@ const parsePlayerList = (input: string): string[] => {
 
 const handleSave = async () => {
   try {
-    const gameData = {
+    const gameData: {
+      blue_team: { operatives: string[]; spymasters: string[]; count: number }
+      red_team: { operatives: string[]; spymasters: string[]; count: number }
+      won_because_of_assassin?: string
+    } = {
       blue_team: {
         operatives: parsePlayerList(formData.value.blueOperatives),
         spymasters: parsePlayerList(formData.value.blueSpymasters),
+        count: formData.value.blueCount,
       },
       red_team: {
         operatives: parsePlayerList(formData.value.redOperatives),
         spymasters: parsePlayerList(formData.value.redSpymasters),
+        count: formData.value.redCount,
       },
-      winner: formData.value.winner,
+    }
+
+    // Add won_because_of_assassin if specified
+    if (formData.value.wonBecauseOfAssassin) {
+      gameData.won_because_of_assassin = formData.value.wonBecauseOfAssassin.toLowerCase()
     }
 
     if (dialogMode.value === 'create') {
@@ -292,6 +329,16 @@ const handleDelete = async (gameId: number) => {
                 placeholder="Charlie, Diana"
               />
             </div>
+            <div class="space-y-2">
+              <Label for="blue-count">Cards Remaining</Label>
+              <Input
+                id="blue-count"
+                v-model.number="formData.blueCount"
+                type="number"
+                min="0"
+                placeholder="0"
+              />
+            </div>
           </div>
 
           <!-- Red Team -->
@@ -313,20 +360,34 @@ const handleDelete = async (gameId: number) => {
                 placeholder="Grace, Henry"
               />
             </div>
+            <div class="space-y-2">
+              <Label for="red-count">Cards Remaining</Label>
+              <Input
+                id="red-count"
+                v-model.number="formData.redCount"
+                type="number"
+                min="0"
+                placeholder="0"
+              />
+            </div>
           </div>
 
-          <!-- Winner -->
+          <!-- Winner Determination -->
           <div class="space-y-2">
-            <Label for="winner">Winner</Label>
-            <Select v-model="formData.winner">
-              <SelectTrigger id="winner">
-                <SelectValue />
+            <Label for="assassin">Won Because of Assassin (Optional)</Label>
+            <Select v-model="formData.wonBecauseOfAssassin">
+              <SelectTrigger id="assassin">
+                <SelectValue placeholder="None (normal win)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Blue">Blue</SelectItem>
-                <SelectItem value="Red">Red</SelectItem>
+                <SelectItem value="">None (normal win)</SelectItem>
+                <SelectItem value="blue">Blue (other team hit assassin)</SelectItem>
+                <SelectItem value="red">Red (other team hit assassin)</SelectItem>
               </SelectContent>
             </Select>
+            <p class="text-xs text-muted-foreground">
+              If not set, the winner is determined by which team has 0 cards remaining
+            </p>
           </div>
         </div>
 
